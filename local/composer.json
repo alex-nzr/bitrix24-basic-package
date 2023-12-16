@@ -1,0 +1,26 @@
+{
+    "name": "alex-nzr/bitrix24-basic-package",
+    "description": "Basis for development of project based on Bitrix24",
+    "keywords": [
+        "Bitrix",
+        "PHP"
+    ],
+    "type": "library",
+    "license": "MIT",
+    "homepage": "https://github.com/alex-nzr/bitrix24-basic-package/",
+    "autoload": {
+        "psr-4": {
+            "ANZ\\Bitrix24\\BasicPackage\\": "lib/"
+        }
+    },
+    "authors": [
+        {
+            "name": "Alexey Nazarov",
+            "email": "jc1988x@gmail.com",
+            "homepage": "https://github.com/alex-nzr"
+        }
+    ],
+    "require": {
+        "php": ">=8.1"
+    }
+}
