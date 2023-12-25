@@ -11,8 +11,6 @@
  */
 namespace ANZ\Bitrix24\BasicPackage\Internal\Debug;
 
-use Stringable;
-
 /**
  * @class Logger
  * @package ANZ\Bitrix24\BasicPackage\Internal\Debug

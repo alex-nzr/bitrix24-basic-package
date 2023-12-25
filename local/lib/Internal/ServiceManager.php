@@ -11,8 +11,8 @@
  */
 namespace ANZ\Bitrix24\BasicPackage\Internal;
 
-
 use ANZ\Bitrix24\BasicPackage\Config\Configuration;
+use ANZ\Bitrix24\BasicPackage\Config\Options;
 use ANZ\Bitrix24\BasicPackage\Event\EventManager;
 use ANZ\Bitrix24\BasicPackage\Internal\Traits\Singleton;
 use ANZ\Bitrix24\BasicPackage\Service\Container;
@@ -25,7 +25,6 @@ use Bitrix\Main\UI\Extension;
 use Bitrix\Main\UrlRewriter;
 use Exception;
 
-
 /**
  * @class ServiceManager
  * @package ANZ\Bitrix24\BasicPackage\Internal
@@ -33,6 +32,13 @@ use Exception;
 class ServiceManager
 {
     use Singleton;
+
+    private string $moduleId;
+
+    public function __construct()
+    {
+        $this->moduleId = Configuration::getInstance()->getBasicModuleId();
+    }
 
     /**
      * @return void
@@ -79,6 +85,9 @@ class ServiceManager
         Extension::load($dependencies);
     }
 
+    /**
+     * @return void
+     */
     protected function addCustomCrmServices(): void
     {
         ServiceLocator::getInstance()->addInstance('crm.service.container', new Container());
@@ -86,6 +95,9 @@ class ServiceManager
         //ServiceLocator::getInstance()->addInstance('crm.filter.factory', new FilterFactory());
     }
 
+    /**
+     * @return void
+     */
     protected function addCustomSectionProvider(): void
     {
         $crmConfig = BxConfig::getInstance('crm');
@@ -104,7 +116,7 @@ class ServiceManager
     }
 
     /**
-     * TODO Вызывается на событии EventManager::ON_ENTITY_DETAILS_CONTEXT
+     * TODO Вызывается на событии EventManager::ON_ENTITY_DETAILS_CONTEXT в зависимости от типа сущности
      * @return void
      * @throws \Exception
      */
@@ -119,24 +131,22 @@ class ServiceManager
      */
     protected function includeBasicModule(): void
     {
-        $moduleId = Configuration::getInstance()->getBasicModuleId();
-
-        if (!ModuleManager::isModuleInstalled($moduleId))
+        if (!ModuleManager::isModuleInstalled($this->moduleId))
         {
-            ModuleManager::add($moduleId);
+            ModuleManager::add($this->moduleId);
         }
 
-        $included = Loader::includeSharewareModule($moduleId);
+        $included = Loader::includeSharewareModule($this->moduleId);
         if ($included !== Loader::MODULE_INSTALLED)
         {
             switch ($included)
             {
                 case Loader::MODULE_NOT_FOUND:
-                    throw new Exception('Module '.$moduleId.' not found');
+                    throw new Exception('Module '.$this->moduleId.' not found');
                 case Loader::MODULE_DEMO:
-                    throw new Exception('Module '.$moduleId.' in demo mode');
+                    throw new Exception('Module '.$this->moduleId.' in demo mode');
                 case Loader::MODULE_DEMO_EXPIRED:
-                    throw new Exception('Module '.$moduleId.' demo period expired');
+                    throw new Exception('Module '.$this->moduleId.' demo period expired');
             }
         }
     }
@@ -146,68 +156,68 @@ class ServiceManager
      */
     protected function updateUrlRewriter(): void
     {
-        $moduleId = Configuration::getInstance()->getBasicModuleId();
-        $urlRewriteData = Configuration::getInstance()->getUrlRewriteConditions();
-        $addedConditions = [];
-        $addedConditionsJson = Option::get($moduleId, 'project_added_url_rewrite_conditions');
-        if (is_string($addedConditionsJson) && !empty($addedConditionsJson))
+        if ($this->needToUpdateUrlRewriteConditions())
         {
-            $addedConditions = json_decode($addedConditionsJson, true);
-            if (!is_array($addedConditions)){
-                $addedConditions = [];
+            foreach (Configuration::getInstance()->getUrlRewriteConditions() as $urlRewriteItem)
+            {
+                $siteId = $urlRewriteItem['SITE_ID'];
+                $condition = $urlRewriteItem['CONDITION'];
+                if (empty($siteId))
+                {
+                    $siteId = 's1';
+                }
+
+                if (empty($condition))
+                {
+                    throw new Exception('Condition is empty');
+                }
+
+                $arResult = UrlRewriter::getList($siteId, ['CONDITION' => $condition]);
+                if (!empty($arResult))
+                {
+                    UrlRewriter::update(
+                        $siteId,
+                        ['CONDITION' => $condition],
+                        [
+                            'CONDITION' => $condition,
+                            'ID' => $urlRewriteItem['ID'],
+                            'PATH' => $urlRewriteItem['PATH'],
+                            'RULE' => $urlRewriteItem['RULE']
+                        ]
+                    );
+                }
+                else
+                {
+                    UrlRewriter::add(
+                        $siteId,
+                        [
+                            'CONDITION' => $condition,
+                            'ID' => $urlRewriteItem['ID'],
+                            'PATH' => $urlRewriteItem['PATH'],
+                            'RULE' => $urlRewriteItem['RULE']
+                        ]
+                    );
+                }
             }
+
+            Option::set(
+                $this->moduleId,
+                Options\System::OPTION_KEY_LAST_UPDATED_CONDITIONS_HASH,
+                Configuration::getInstance()->getUrlRewriteConditionsHash()
+            );
         }
+    }
 
-        foreach ($urlRewriteData as $urlRewriteItem)
-        {
-            $siteId = $urlRewriteItem['SITE_ID'];
-            $condition = $urlRewriteItem['CONDITION'];
-            if (empty($siteId))
-            {
-                $siteId = 's1';
-            }
+    /**
+     * @return bool
+     */
+    private function needToUpdateUrlRewriteConditions(): bool
+    {
+        $conditionsHash = Configuration::getInstance()->getUrlRewriteConditionsHash();
+        $lastUpdatedConditionsHash = Option::get(
+            $this->moduleId, Options\System::OPTION_KEY_LAST_UPDATED_CONDITIONS_HASH
+        );
 
-            if (empty($condition))
-            {
-                throw new Exception('Condition is empty');
-            }
-
-            //для обновления существующего правила нужно удалить его из массива, хранящегося в опции
-            if (in_array($condition, $addedConditions))
-            {
-                continue;
-            }
-
-            $arResult = UrlRewriter::getList($siteId, ['CONDITION' => $condition]);
-            if (!empty($arResult))
-            {
-                UrlRewriter::update(
-                    $siteId,
-                    ['CONDITION' => $condition],
-                    [
-                        'CONDITION' => $condition,
-                        'ID' => $urlRewriteItem['ID'],
-                        'PATH' => $urlRewriteItem['PATH'],
-                        'RULE' => $urlRewriteItem['RULE']
-                    ]
-                );
-            }
-            else
-            {
-                UrlRewriter::add(
-                    $siteId,
-                    [
-                        'CONDITION' => $condition,
-                        'ID' => $urlRewriteItem['ID'],
-                        'PATH' => $urlRewriteItem['PATH'],
-                        'RULE' => $urlRewriteItem['RULE']
-                    ]
-                );
-            }
-
-            $addedConditions[] = $condition;
-        }
-
-        Option::set($moduleId, 'project_added_url_rewrite_conditions', json_encode($addedConditions));
+        return ($conditionsHash !== $lastUpdatedConditionsHash);
     }
 }

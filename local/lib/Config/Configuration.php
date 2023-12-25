@@ -29,6 +29,11 @@ class Configuration
         return Constants::BASIC_MODULE_ID;
     }
 
+    /**
+     * При изменении массива правил, обновление urlrewrite.php произойдёт автоматически
+     * см. \ANZ\Bitrix24\BasicPackage\Internal\ServiceManager::updateUrlRewriter()
+     * @return array[]
+     */
     public function getUrlRewriteConditions(): array
     {
         return [
@@ -36,8 +41,16 @@ class Configuration
                 'CONDITION' => '#^/bitrix/admin/main-settings-page.php#',
                 'RULE' => '',
                 'ID' => null,
-                'PATH' => '/local/admin/page.php'
+                'PATH' => '/local/admin/main-settings-page.php',
             ]
         ];
+    }
+
+    /**
+     * @return string
+     */
+    public function getUrlRewriteConditionsHash(): string
+    {
+        return hash('sha512', json_encode($this->getUrlRewriteConditions()));
     }
 }
