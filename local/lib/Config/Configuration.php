@@ -41,7 +41,7 @@ class Configuration
                 'CONDITION' => '#^/bitrix/admin/main-settings-page.php#',
                 'RULE' => '',
                 'ID' => null,
-                'PATH' => '/local/admin/main-settings-page.php',
+                'PATH' => '/local/admin/pages/main-settings-page.php',
             ]
         ];
     }

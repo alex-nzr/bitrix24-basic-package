@@ -11,12 +11,14 @@
  */
 namespace ANZ\Bitrix24\BasicPackage\Internal\Option;
 
-use ANZ\Bitrix24\BasicPackage\Config\Constants;
+use ANZ\Bitrix24\BasicPackage\Config\Configuration;
 use Bitrix\Main\Config\Option;
 use Bitrix\Main\Context;
+use Bitrix\Main\Localization\Loc;
 use Bitrix\Main\Request;
 use CAdminTabControl;
 use CFile;
+use Exception;
 
 /**
  * @class OptionManager
@@ -24,20 +26,18 @@ use CFile;
  */
 abstract class OptionManager
 {
+    const OPTION_TYPE_FILE_POSTFIX = '_FILE';
+
     protected Request $request;
     protected string  $moduleId;
     protected array   $tabs;
     protected string $formAction;
     public CAdminTabControl $tabControl;
 
-    /**
-     * @param string $moduleId
-     * @throws \Exception
-     */
-    public function __construct(string $moduleId)
+    public function __construct()
     {
         $this->request  = Context::getCurrent()->getRequest();
-        $this->moduleId = $moduleId;
+        $this->moduleId = Configuration::getInstance()->getBasicModuleId();
         $this->setTabs();
         $this->tabControl = new CAdminTabControl('tabControl', $this->tabs);
         $this->formAction = $this->request->getRequestedPage() . "?" . http_build_query([
@@ -52,11 +52,20 @@ abstract class OptionManager
     abstract protected function setTabs(): void;
 
     /**
+     * @return string
+     */
+    public function getModuleId(): string
+    {
+        return $this->moduleId;
+    }
+
+    /**
      * @return void
      */
     public function processRequest(): void
     {
-        try {
+        try
+        {
             if ($this->request->isPost() && $this->request->getPost('Update') && check_bitrix_sessid())
             {
                 foreach ($this->tabs as $arTab)
@@ -70,7 +79,7 @@ abstract class OptionManager
                         $optionName = $arOption[0];
                         $optionValue = $this->request->getPost($optionName);
 
-                        $fileOptionPostfix = Constants::OPTION_TYPE_FILE_POSTFIX;
+                        $fileOptionPostfix = static::OPTION_TYPE_FILE_POSTFIX;
                         if (str_ends_with($optionName, $fileOptionPostfix))
                         {
                             $currentValue = Option::get($this->moduleId, $optionName);
@@ -81,11 +90,11 @@ abstract class OptionManager
                             }
 
                             $arFile = $optionValue;
-                            $arFile["MODULE_ID"] = $this->moduleId;
+                            $arFile['MODULE_ID'] = $this->moduleId;
 
-                            if (strlen($arFile["name"]) > 0)
+                            if (strlen($arFile['name']) > 0)
                             {
-                                $fid = CFile::SaveFile($arFile, $arFile["MODULE_ID"]);
+                                $fid = CFile::SaveFile($arFile, $arFile['MODULE_ID']);
                                 $optionValue = (int)$fid > 0 ? $fid : '';
                             }
                         }
@@ -98,13 +107,15 @@ abstract class OptionManager
                 }
             }
         }
-        catch (\Exception $e){
+        catch (Exception $e)
+        {
             ShowError($e->getMessage());
         }
     }
 
     /**
      * @return void
+     * @throws \Exception
      */
     public function startDrawHtml(): void
     {
@@ -144,7 +155,10 @@ abstract class OptionManager
      */
     protected function drawSettingsRow(string $module_id, $option): void
     {
-        if(empty($option))return;
+        if(empty($option))
+        {
+            return;
+        }
 
         if(!is_array($option))
         {
@@ -250,17 +264,6 @@ abstract class OptionManager
             case "staticText":
                 echo "<span>$val</span>";
                 break;
-            //TODO перенести в этот модуль js-расширение "BX.AdminSection"
-            /*case "colorPicker":
-                echo "<input type='text' id='$name' name='$name' value='$val' readonly/>
-                              <script>
-                                BX.ready(function() {
-                                    if (BX.AdminSection?.OptionPage){
-                                        BX.AdminSection.OptionPage.bindColorPickerToNode('$name', '$name', '$option[2]');
-                                    }
-                                });
-                              </script>";
-                break;*/
             case "file":
                 if (is_numeric($val) && (int)$val > 0)
                 {
@@ -287,164 +290,6 @@ abstract class OptionManager
                 break;
             case "role":
                 $this->renderRolesList($name.'[]', $type[1], $val);
-                break;
-            case 'ui-selector'://пример использования и кастомизации есть в модуле тендеры
-                Extension::load(['ui.entity-selector']);
-                $containerId = 'container_' . $name;
-                $placementId = 'placement_' . $name;
-                $dialogPreselectedItems = [];
-                if (!empty($val))
-                {
-                    $decodedValue = json_decode($val, true);
-
-                    if (is_array($decodedValue) && !empty($decodedValue))
-                    {
-                        foreach ($decodedValue as $item)
-                        {
-                            if (is_array($item))
-                            {
-                                $dialogPreselectedItems[] = [$type[1], (int)$item['ID']];
-                            }
-                        }
-                    }
-                }
-                ?>
-                <span id="<?=$containerId?>">
-                    <span id="<?=$placementId?>"></span>
-                </span>
-                <script>
-                    //TODO вынести js в расширение
-                    BX.ready(function ()
-                    {
-                        const customHandlers = BX.namespace('BX.CBit.customUiSelectorModuleOptionHandlers.<?=$name?>');
-                        const fieldName = '<?=$name?>';
-                        const isMultiple = '<?=$type[3]?>' === 'Y';
-
-                        const tagSelector = new BX.UI.EntitySelector.TagSelector({
-                            id: `${fieldName}_selector`,
-                            multiple: isMultiple,
-                            addButtonCaption: 'Select',
-                            addButtonCaptionMore: isMultiple ? 'More' : 'Select',
-                            dialogOptions: {
-                                context: `${fieldName}_CONTEXT`,
-                                entities: [
-                                    {
-                                        id           : '<?=$type[1]?>',
-                                        options      : {},
-                                        dynamicLoad  : true,
-                                        dynamicSearch: true,
-                                    },
-                                ],
-                                preload: true,
-                                preselectedItems: <?=CUtil::PhpToJSObject($dialogPreselectedItems)?>,
-                                hideOnSelect: !isMultiple,
-                                hideByEsc: true,
-                                searchOptions: {
-                                    allowCreateItem: false,
-                                    footerOptions: {
-                                        label: ''
-                                    }
-                                },
-                                events: {}
-                            },
-                            events: {
-                                onBeforeTagAdd: (event) => {
-                                    if (typeof customHandlers.onBeforeTagAdd === 'function')
-                                    {
-                                        customHandlers.onBeforeTagAdd(event);
-                                    }
-                                },
-                                onBeforeTagRemove: (event) => {
-                                    if (typeof customHandlers.onBeforeTagRemove === 'function')
-                                    {
-                                        customHandlers.onBeforeTagRemove(event);
-                                    }
-                                },
-                                onAfterTagAdd: (event) => {
-                                    const container = BX('<?=$containerId?>');
-                                    if (container)
-                                    {
-                                        const inputId = `${fieldName}_input`;
-                                        let input = BX(inputId);
-                                        if (input)
-                                        {
-                                            input.value = getNewFieldValue(fieldName);
-                                        }
-                                        else
-                                        {
-                                            input = BX.create('input', {
-                                                props: {
-                                                    id: inputId,
-                                                    value: getNewFieldValue(fieldName),
-                                                    type: "hidden",
-                                                    name: fieldName,
-                                                },
-                                            });
-                                            container.append(input);
-                                        }
-                                    }
-                                    if (typeof customHandlers.onAfterTagAdd === 'function')
-                                    {
-                                        customHandlers.onAfterTagAdd(event);
-                                    }
-                                },
-                                onAfterTagRemove: function(event) {
-                                    //const {tag} = event.getData();
-                                    const container = BX('<?=$containerId?>');
-                                    if (container)
-                                    {
-                                        const inputId = `${fieldName}_input`;
-                                        const input = BX(inputId);
-                                        input && (input.value = getNewFieldValue());
-                                    }
-                                    if (typeof customHandlers.onAfterTagRemove === 'function')
-                                    {
-                                        customHandlers.onAfterTagRemove(event);
-                                    }
-                                },
-                            }
-                        });
-
-                        tagSelector.renderTo(BX('<?=$placementId?>'));
-
-                        function getNewFieldValue() {
-                            try
-                            {
-                                let result = isMultiple ? [] : {};
-                                const tags = tagSelector.getTags();
-                                if (isMultiple)
-                                {
-                                    tags.length && tags.forEach(tag => {
-                                        result.push({
-                                            ID: tag.getId() ?? 0,
-                                            TITLE: tag.getTitle() ?? '',
-                                            AVATAR: tag.getAvatar() ?? '',
-                                        });
-                                    });
-                                }
-                                else
-                                {
-                                    if (tags.length)
-                                    {
-                                        result = {
-                                            ID: tags[0].getId() ?? 0,
-                                            TITLE: tags[0].getTitle() ?? '',
-                                            AVATAR: tag.getAvatar() ?? '',
-                                        };
-                                    }
-                                }
-
-                                return JSON.stringify(result);
-                            }
-                            catch (e)
-                            {
-                                console.error(e);
-                                return '{}';
-                            }
-                        }
-                    });
-                </script>
-                <?php
                 break;
         }
         ?>

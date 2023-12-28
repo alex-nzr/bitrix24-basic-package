@@ -22,8 +22,7 @@ use ANZ\Bitrix24\BasicPackage\Internal\Option\OptionManager;
 class Main extends OptionManager
 {
     const OPTION_KEY_SOME_TEXT_OPTION = 'SOME_TEXT_OPTION';
-    const OPTION_KEY_SOME_FILE_OPTION = 'SOME_FILE_OPTION';
-    const OPTION_KEY_SOME_COLOR_OPTION = 'SOME_COLOR_OPTION';
+    const OPTION_KEY_SOME_FILE_OPTION = 'SOME_FILE_OPTION' . parent::OPTION_TYPE_FILE_POSTFIX;
 
     /**
      * @return void
@@ -32,31 +31,35 @@ class Main extends OptionManager
     {
         $this->tabs = [
             [
-                'DIV'   => "settings_tab",
-                'TAB'   => 'Main settings',
+                'DIV'   => 'string_settings_tab',
+                'TAB'   => 'String settings',
                 'ICON'  => '',
-                'TITLE' => 'Main settings',
+                'TITLE' => 'String settings',
                 "OPTIONS" => [
-                    'Main settings',
+                    'String settings',
                     [
                         static::OPTION_KEY_SOME_TEXT_OPTION,
                         'Some text option',
                         "placeholder value",
                         ['text', 50]
                     ],
+                    [ 'note' => 'Some note in string-option page'],
+                ]
+            ],
+            [
+                'DIV'   => 'file_settings_tab',
+                'TAB'   => 'File settings',
+                'ICON'  => '',
+                'TITLE' => 'File settings',
+                "OPTIONS" => [
+                    'File settings',
                     [
                         static::OPTION_KEY_SOME_FILE_OPTION,
                         'Some file option',
                         "",
                         ['file']
                     ],
-                    [
-                        static::OPTION_KEY_SOME_COLOR_OPTION,
-                        'Some color-picker option',
-                        "#025ea1",
-                        ['colorPicker']
-                    ],
-                    [ 'note' => 'Some note in option page'],
+                    [ 'note' => 'Some note in file-option page'],
                 ]
             ]
         ];
