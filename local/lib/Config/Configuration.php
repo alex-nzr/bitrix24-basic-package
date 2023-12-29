@@ -42,6 +42,12 @@ class Configuration
                 'RULE' => '',
                 'ID' => null,
                 'PATH' => '/local/admin/pages/main-settings-page.php',
+            ],
+
+            //USE DEL=Y to delete condition on next hit
+            [
+                'CONDITION' => '#^/bitrix/admin/to-delete.php#',
+                'DEL' => 'Y'
             ]
         ];
     }

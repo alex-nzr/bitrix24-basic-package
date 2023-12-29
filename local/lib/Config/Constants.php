@@ -20,4 +20,6 @@ namespace ANZ\Bitrix24\BasicPackage\Config;
 class Constants
 {
     const BASIC_MODULE_ID = 'anz.basic';
+
+    const ADMIN_OPTIONS_EXTENSION = 'admin.ui.options';
 }

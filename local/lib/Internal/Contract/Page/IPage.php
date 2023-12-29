@@ -17,6 +17,7 @@ namespace ANZ\Bitrix24\BasicPackage\Internal\Contract\Page;
  */
 interface IPage
 {
-    public function checkAccess(); 
+    public function checkAccess();
     public function draw();
+    public function isAdminPage() : bool;
 }

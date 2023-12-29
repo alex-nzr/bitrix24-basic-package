@@ -19,4 +19,5 @@ namespace ANZ\Bitrix24\BasicPackage\Config\Options;
 class System
 {
     const OPTION_KEY_LAST_UPDATED_CONDITIONS_HASH = 'project_last_updated_conditions_hash';
+    const OPTION_KEY_LAST_UPDATED_AGENTS_HASH = 'project_last_updated_agents_hash';
 }

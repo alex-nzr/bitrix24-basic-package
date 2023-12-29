@@ -11,6 +11,7 @@
  */
 namespace ANZ\Bitrix24\BasicPackage\Internal;
 
+use ANZ\Bitrix24\BasicPackage\Agent;
 use ANZ\Bitrix24\BasicPackage\Config\Configuration;
 use ANZ\Bitrix24\BasicPackage\Config\Options;
 use ANZ\Bitrix24\BasicPackage\Event\EventManager;
@@ -23,6 +24,7 @@ use Bitrix\Main\Loader;
 use Bitrix\Main\ModuleManager;
 use Bitrix\Main\UI\Extension;
 use Bitrix\Main\UrlRewriter;
+use CAgent;
 use Exception;
 
 /**
@@ -42,14 +44,15 @@ class ServiceManager
 
     /**
      * @return void
-     * @throws \Exception
+     * @throws \Exception|\Psr\Container\NotFoundExceptionInterface
      */
     public function start(): void
     {
         EventManager::addEventHandlers();
 
-        $this->updateUrlRewriter();
         $this->includeBasicModule();
+        $this->updateUrlRewriter();
+        $this->updateAgents();
         $this->includeDependentModules();
         $this->addCustomCrmServices();
         $this->addCustomSectionProvider();
@@ -175,16 +178,26 @@ class ServiceManager
                 $arResult = UrlRewriter::getList($siteId, ['CONDITION' => $condition]);
                 if (!empty($arResult))
                 {
-                    UrlRewriter::update(
-                        $siteId,
-                        ['CONDITION' => $condition],
-                        [
-                            'CONDITION' => $condition,
-                            'ID' => $urlRewriteItem['ID'],
-                            'PATH' => $urlRewriteItem['PATH'],
-                            'RULE' => $urlRewriteItem['RULE']
-                        ]
-                    );
+                    if (key_exists('DEL', $urlRewriteItem) && $urlRewriteItem['DEL'] === 'Y')
+                    {
+                        UrlRewriter::delete(
+                            $siteId,
+                            ['CONDITION' => $condition]
+                        );
+                    }
+                    else
+                    {
+                        UrlRewriter::update(
+                            $siteId,
+                            ['CONDITION' => $condition],
+                            [
+                                'CONDITION' => $condition,
+                                'ID' => $urlRewriteItem['ID'],
+                                'PATH' => $urlRewriteItem['PATH'],
+                                'RULE' => $urlRewriteItem['RULE']
+                            ]
+                        );
+                    }
                 }
                 else
                 {
@@ -211,7 +224,7 @@ class ServiceManager
     /**
      * @return bool
      */
-    private function needToUpdateUrlRewriteConditions(): bool
+    protected function needToUpdateUrlRewriteConditions(): bool
     {
         $conditionsHash = Configuration::getInstance()->getUrlRewriteConditionsHash();
         $lastUpdatedConditionsHash = Option::get(
@@ -219,5 +232,73 @@ class ServiceManager
         );
 
         return ($conditionsHash !== $lastUpdatedConditionsHash);
+    }
+
+    /**
+     * @throws \Exception
+     */
+    protected function updateAgents(): void
+    {
+        if ($this->needToUpdateAgents())
+        {
+            foreach (Agent\Storage::getAgentsData() as $agent)
+            {
+                $name = $agent['handler'];
+                if (key_exists('DEL', $agent) && $agent['DEL'] === 'Y')
+                {
+                    CAgent::RemoveAgent($name, $this->moduleId);
+                }
+                else
+                {
+                    $dbResult = CAgent::GetList(['ID' => 'DESC'], ['NAME' => $name]);
+                    if ($dbResult && ($existingAgent = $dbResult->Fetch()))
+                    {
+                        CAgent::Update($existingAgent['ID'],[
+                            'NAME' => $name,
+                            'MODULE_ID' => Configuration::getInstance()->getBasicModuleId(),
+                            'IS_PERIOD' => $agent['period'],
+                            'AGENT_INTERVAL' => $agent['interval'],
+                            'ACTIVE' => $agent['active'],
+                            'NEXT_EXEC' => $agent['nextExec'],
+                            'USER_ID' => $agent['userId'],
+                            'SORT' => $agent['sort']
+                        ]);
+                    }
+                    else
+                    {
+                        CAgent::AddAgent(
+                            $name,
+                            Configuration::getInstance()->getBasicModuleId(),
+                            $agent['period'],
+                            $agent['interval'],
+                            '',
+                            $agent['active'],
+                            $agent['nextExec'],
+                            $agent['sort'],
+                            $agent['userId']
+                        );
+                    }
+                }
+            }
+
+            Option::set(
+                $this->moduleId,
+                Options\System::OPTION_KEY_LAST_UPDATED_AGENTS_HASH,
+                Agent\Storage::getAgentsDataHash()
+            );
+        }
+    }
+
+    /**
+     * @return bool
+     */
+    protected function needToUpdateAgents(): bool
+    {
+        $agentsHash = Agent\Storage::getAgentsDataHash();
+        $lastUpdatedAgentsHash = Option::get(
+            $this->moduleId, Options\System::OPTION_KEY_LAST_UPDATED_AGENTS_HASH
+        );
+
+        return ($agentsHash !== $lastUpdatedAgentsHash);
     }
 }

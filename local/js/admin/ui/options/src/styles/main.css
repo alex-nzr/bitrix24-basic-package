@@ -1,0 +1,7 @@
+.adm-info-message-wrap{
+    display: flex;
+    width: 100%;
+}
+.adm-info-message-wrap .adm-info-message{
+    width: 100%;
+}

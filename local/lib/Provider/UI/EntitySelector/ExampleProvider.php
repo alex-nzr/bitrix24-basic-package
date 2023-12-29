@@ -120,7 +120,7 @@ class ExampleProvider extends BaseProvider
             'title' => $item['NAME'] . ' ' . $item['LAST_NAME'],
             'customData' => [
                 'login' => $item['LOGIN'],
-                'onlineStatus' => $item['IS_ONLINE'] ? 'inline' : 'offline',
+                'onlineStatus' => $item['IS_ONLINE'] ? 'online' : 'offline',
             ]
         ]);
 

@@ -12,10 +12,12 @@
 namespace ANZ\Bitrix24\BasicPackage\Internal\Option;
 
 use ANZ\Bitrix24\BasicPackage\Config\Configuration;
+use ANZ\Bitrix24\BasicPackage\Config\Constants;
 use Bitrix\Main\Config\Option;
 use Bitrix\Main\Context;
 use Bitrix\Main\Localization\Loc;
 use Bitrix\Main\Request;
+use Bitrix\Main\UI\Extension;
 use CAdminTabControl;
 use CFile;
 use Exception;
@@ -117,8 +119,9 @@ abstract class OptionManager
      * @return void
      * @throws \Exception
      */
-    public function startDrawHtml(): void
+    public function drawHtml(): void
     {
+        Extension::load(Constants::ADMIN_OPTIONS_EXTENSION);
         $this->tabControl->Begin();
         ?>
         <form method="POST" action="<?=$this->formAction?>" name="<?=$this->moduleId?>_settings" enctype="multipart/form-data">
@@ -131,20 +134,28 @@ abstract class OptionManager
                 $this->drawSettingsList($this->moduleId, $arTab['OPTIONS']);
             }
         }
-    }
 
-    /**
-     * @return void
-     */
-    public function endDrawHtml(): void
-    {
         $this->tabControl->Buttons();?>
-        <?=bitrix_sessid_post();?>
-        <input type="submit" name="Update" value="<?=Loc::getMessage('MAIN_SAVE')?>" class="adm-btn-save">
-        <input type="reset"  name="reset" value="<?=Loc::getMessage('MAIN_RESET')?>">
+            <?=bitrix_sessid_post();?>
+            <input type="submit" name="Update" value="<?=Loc::getMessage('MAIN_SAVE')?>" class="adm-btn-save">
+            <input type="reset"  name="reset" value="<?=Loc::getMessage('MAIN_RESET')?>">
         </form>
         <?php
         $this->tabControl->End();
+    }
+
+    /**
+     * @param string $module_id
+     * @param array $arParams
+     * @return void
+     * @throws \Exception
+     */
+    protected function drawSettingsList(string $module_id, array $arParams): void
+    {
+        foreach($arParams as $Option)
+        {
+            $this->drawSettingsRow($module_id, $Option);
+        }
     }
 
     /**
@@ -181,20 +192,6 @@ abstract class OptionManager
             $this->renderTitle($option[1]);
             $this->renderInput($option, $currentVal ?? '');
             echo "</tr>";
-        }
-    }
-
-    /**
-     * @param string $module_id
-     * @param array $arParams
-     * @return void
-     * @throws \Exception
-     */
-    protected function drawSettingsList(string $module_id, array $arParams): void
-    {
-        foreach($arParams as $Option)
-        {
-            $this->drawSettingsRow($module_id, $Option);
         }
     }
 
@@ -288,41 +285,11 @@ abstract class OptionManager
                 }
                 echo "<input type='file' id='$name' name='$name'/>";
                 break;
-            case "role":
-                $this->renderRolesList($name.'[]', $type[1], $val);
-                break;
         }
         ?>
         <?if(!($type[0] === 'role')):?>
         </label>
     <?endif;?>
         </td><?
-    }
-
-    /**
-     * @param string $name
-     * @param array $values
-     * @param string $val
-     * @return void
-     */
-    public function renderRolesList(string $name, array $values, string $val): void
-    {
-        $arr_val = json_decode($val, true);
-        if (!is_array($arr_val))
-        {
-            $arr_val = [];
-        }
-
-        echo "<div class='role-list-table'><table><tbody>";
-        foreach($values as $optionVal => $displayVal)
-        {
-            $id = $name.$optionVal;
-            echo "<tr>";
-            $checked = (in_array($optionVal, $arr_val)) ? "checked" : '';
-            echo "<td><input type='checkbox' id='$id' name='$name' value='$optionVal' $checked></td>";
-            echo "<td><label for='$id'>$displayVal</label></td>";
-            echo "</tr>";
-        }
-        echo "</tbody></table></div>";
     }
 }

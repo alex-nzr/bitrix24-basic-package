@@ -11,20 +11,20 @@
  */
 namespace ANZ\Bitrix24\BasicPackage\Admin\Page\Option;
 
-use ANZ\Bitrix24\BasicPackage\Internal\Contract\Page\IPage;
+use ANZ\Bitrix24\BasicPackage\Admin\Page\BaseAdminPage;
 use ANZ\Bitrix24\BasicPackage\Internal\Option\OptionManager;
+use ANZ\Bitrix24\BasicPackage\Service\Container;
 use Bitrix\Main\Loader;
-use CMain;
 use Exception;
+use Psr\Container\NotFoundExceptionInterface;
 
 /**
  * @class BaseOptionPage
  * @package ANZ\Bitrix24\BasicPackage\Admin\Page\Option
  */
-abstract class BaseOptionPage implements IPage
+abstract class BaseOptionPage extends BaseAdminPage
 {
     protected OptionManager $optionManager;
-    protected CMain $globalApp;
 
     /**
      * BaseOptionPage constructor
@@ -32,15 +32,14 @@ abstract class BaseOptionPage implements IPage
      */
     public function __construct(OptionManager $optionManager)
     {
+        parent::__construct();
         $this->optionManager = $optionManager;
-        $this->globalApp = ($GLOBALS['APPLICATION'] instanceof CMain) ? $GLOBALS['APPLICATION'] : new CMain;
-
         $this->optionManager->processRequest();
     }
 
     /**
      * @return bool
-     * @throws \Exception
+     * @throws \Exception|\Psr\Container\NotFoundExceptionInterface
      */
     public function checkAccess(): bool
     {
@@ -49,7 +48,7 @@ abstract class BaseOptionPage implements IPage
             throw new Exception('Basic project module not loaded');
         }
 
-        if ($this->globalApp->GetGroupRight($this->optionManager->getModuleId()) < 'W')
+        if (!Container::getInstance()->getUserPermissions()->canViewPage($this))
         {
             throw new Exception('Access denied');
         }
@@ -64,10 +63,12 @@ abstract class BaseOptionPage implements IPage
     {
         try
         {
-            $this->optionManager->startDrawHtml();
-            $this->optionManager->endDrawHtml();
+            if ($this->checkAccess())
+            {
+                $this->optionManager->drawHtml();
+            }
         }
-        catch (Exception $e)
+        catch (Exception | NotFoundExceptionInterface $e)
         {
             ShowError($e->getMessage());
         }
