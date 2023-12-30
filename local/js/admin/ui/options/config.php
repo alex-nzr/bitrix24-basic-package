@@ -7,7 +7,7 @@ if (!defined('B_PROLOG_INCLUDED') || B_PROLOG_INCLUDED !== true)
 return [
 	'css' => 'dist/index.bundle.css',
 	'js' => 'dist/index.bundle.js',
-	'rel' => [],
+	'rel' => ['ui.entity-selector'],
 	'skip_core' => false,
     'settings'  => [
         'param1' => 'value1'

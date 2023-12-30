@@ -20,6 +20,7 @@ use Bitrix\Main\Request;
 use Bitrix\Main\UI\Extension;
 use CAdminTabControl;
 use CFile;
+use CUtil;
 use Exception;
 
 /**
@@ -215,9 +216,7 @@ abstract class OptionManager
         $type  = $option[3];
         ?>
         <td style="width: 50%">
-        <?if(!($type[0] === 'role')):?>
         <label for="<?=$name?>" class="module-option-label">
-    <?endif;?>
         <?
         switch ($type[0])
         {
@@ -285,11 +284,52 @@ abstract class OptionManager
                 }
                 echo "<input type='file' id='$name' name='$name'/>";
                 break;
+            case 'ui-selector':
+                if (!is_array($type[1]) || empty($type[1]['id']))
+                {
+                    ShowError("Entity is empty in option $name");
+                }
+                $containerId = 'container_' . $name;
+                $placementId = 'placement_' . $name;
+                $dialogPreselectedItems = [];
+                if (!empty($val))
+                {
+                    $decodedValue = json_decode($val, true);
+
+                    if (is_array($decodedValue) && !empty($decodedValue))
+                    {
+                        foreach ($decodedValue as $item)
+                        {
+                            if (is_array($item))
+                            {
+                                $dialogPreselectedItems[] = [$type[1]['id'], (int)$item['ID']];
+                            }
+                        }
+                    }
+                }
+                ?>
+                <span id="<?=$containerId?>">
+                    <span id="<?=$placementId?>"></span>
+                </span>
+                <script>
+                    BX.ready(function(){
+                        const selectors = BX.namespace('Project.Admin.UI.Options.UiSelectors');
+                        selectors['<?=$name?>'] = BX.Project.Admin.UI.Options.createUiSelectorOption(<?=CUtil::PhpToJSObject([
+                            'OPTION_NAME' => $name,
+                            'CONTAINER_ID' => $containerId,
+                            'PLACEMENT_ID' => $placementId,
+                            'MULTIPLE' => ($type[2] === 'Y'),
+                            'PRESELECTED_ITEMS' => $dialogPreselectedItems,
+                            'EVENT_HANDLERS' => is_array($type[3]) ? $type[3] : [],
+                            'ENTITIES' => [$type[1]],
+                        ])?>);
+                    });
+                </script>
+                <?php
+                break;
         }
         ?>
-        <?if(!($type[0] === 'role')):?>
         </label>
-    <?endif;?>
         </td><?
     }
 }

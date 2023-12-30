@@ -17,10 +17,12 @@ use ANZ\Bitrix24\BasicPackage\Config\Options;
 use ANZ\Bitrix24\BasicPackage\Event\EventManager;
 use ANZ\Bitrix24\BasicPackage\Internal\Traits\Singleton;
 use ANZ\Bitrix24\BasicPackage\Service\Container;
+use Bitrix\Main\ArgumentNullException;
 use Bitrix\Main\Config\Configuration as BxConfig;
 use Bitrix\Main\Config\Option;
 use Bitrix\Main\DI\ServiceLocator;
 use Bitrix\Main\Loader;
+use Bitrix\Main\LoaderException;
 use Bitrix\Main\ModuleManager;
 use Bitrix\Main\UI\Extension;
 use Bitrix\Main\UrlRewriter;
@@ -73,7 +75,7 @@ class ServiceManager
 
         foreach ($dependencies as $dependency) {
             if (!Loader::includeModule($dependency)){
-                throw new Exception("Can not include module '$dependency'");
+                throw new LoaderException("Can not include module '$dependency'");
             }
         }
     }
@@ -145,11 +147,11 @@ class ServiceManager
             switch ($included)
             {
                 case Loader::MODULE_NOT_FOUND:
-                    throw new Exception('Module '.$this->moduleId.' not found');
+                    throw new LoaderException('Module '.$this->moduleId.' not found');
                 case Loader::MODULE_DEMO:
-                    throw new Exception('Module '.$this->moduleId.' in demo mode');
+                    throw new LoaderException('Module '.$this->moduleId.' in demo mode');
                 case Loader::MODULE_DEMO_EXPIRED:
-                    throw new Exception('Module '.$this->moduleId.' demo period expired');
+                    throw new LoaderException('Module '.$this->moduleId.' demo period expired');
             }
         }
     }
@@ -172,7 +174,7 @@ class ServiceManager
 
                 if (empty($condition))
                 {
-                    throw new Exception('Condition is empty');
+                    throw new ArgumentNullException('CONDITION');
                 }
 
                 $arResult = UrlRewriter::getList($siteId, ['CONDITION' => $condition]);

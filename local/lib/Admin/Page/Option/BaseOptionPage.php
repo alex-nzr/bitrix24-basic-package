@@ -14,7 +14,9 @@ namespace ANZ\Bitrix24\BasicPackage\Admin\Page\Option;
 use ANZ\Bitrix24\BasicPackage\Admin\Page\BaseAdminPage;
 use ANZ\Bitrix24\BasicPackage\Internal\Option\OptionManager;
 use ANZ\Bitrix24\BasicPackage\Service\Container;
+use Bitrix\Main\AccessDeniedException;
 use Bitrix\Main\Loader;
+use Bitrix\Main\LoaderException;
 use Exception;
 use Psr\Container\NotFoundExceptionInterface;
 
@@ -45,12 +47,12 @@ abstract class BaseOptionPage extends BaseAdminPage
     {
         if (!Loader::includeModule($this->optionManager->getModuleId()))
         {
-            throw new Exception('Basic project module not loaded');
+            throw new LoaderException('Basic project module not loaded');
         }
 
         if (!Container::getInstance()->getUserPermissions()->canViewPage($this))
         {
-            throw new Exception('Access denied');
+            throw new AccessDeniedException();
         }
 
         return true;

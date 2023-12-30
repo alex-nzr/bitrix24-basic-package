@@ -23,6 +23,7 @@ class Main extends OptionManager
 {
     const OPTION_KEY_SOME_TEXT_OPTION = 'SOME_TEXT_OPTION';
     const OPTION_KEY_SOME_FILE_OPTION = 'SOME_FILE_OPTION' . parent::OPTION_TYPE_FILE_POSTFIX;
+    const OPTION_KEY_COMPANY_SELECTOR_OPTION = 'COMPANY_SELECTOR_OPTION';
 
     /**
      * @return void
@@ -35,7 +36,7 @@ class Main extends OptionManager
                 'TAB'   => 'String settings',
                 'ICON'  => '',
                 'TITLE' => 'String settings',
-                "OPTIONS" => [
+                'OPTIONS' => [
                     'String settings',
                     [
                         static::OPTION_KEY_SOME_TEXT_OPTION,
@@ -51,7 +52,7 @@ class Main extends OptionManager
                 'TAB'   => 'File settings',
                 'ICON'  => '',
                 'TITLE' => 'File settings',
-                "OPTIONS" => [
+                'OPTIONS' => [
                     'File settings',
                     [
                         static::OPTION_KEY_SOME_FILE_OPTION,
@@ -61,7 +62,33 @@ class Main extends OptionManager
                     ],
                     [ 'note' => 'Some note in file-option page'],
                 ]
-            ]
+            ],
+            [
+                'DIV'   => 'ui_selector_settings_tab',
+                'TAB'   => 'UI selector settings',
+                'ICON'  => '',
+                'TITLE' => 'UI selector settings',
+                'OPTIONS' => [
+                    'UI selector settings',
+                    [
+                        static::OPTION_KEY_COMPANY_SELECTOR_OPTION,
+                        'Some ui-selector option',
+                        json_encode([]),
+                        [
+                            'ui-selector',             //option type
+                            [                          //entity. Multiple entities not supported
+                                'id' => 'company',
+                                'options' => null
+                            ],
+                            'Y',                       //multiple Y/N
+                            [                          //eventHandlers to tagSelector(JS code)
+                                'onAfterTagAdd' => 'function(event){console.log("IT WORKS!!!")}'
+                            ]
+                        ]
+                    ],
+                    [ 'note' => 'Some note in ui-selector-option page'],
+                ]
+            ],
         ];
     }
 }
