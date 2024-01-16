@@ -5,7 +5,7 @@
  * E-mail: jc1988x@gmail.com
  * Copyright (c) 2019 - 2023
  * ==================================================
- * bitrix24-basic-package - ExampleProvider.php
+ * bitrix24-basic-package - AdminProvider.php
  * 17.12.2023 01:39
  * ==================================================
  */
@@ -19,24 +19,27 @@ use Bitrix\UI\EntitySelector\BaseProvider;
 use Bitrix\UI\EntitySelector\Dialog;
 use Bitrix\UI\EntitySelector\Item;
 use Bitrix\UI\EntitySelector\SearchQuery;
+use CFile;
 use Throwable;
 
 /**
- * @class ExampleProvider
+ * @class AdminProvider
  * @package ANZ\Bitrix24\BasicPackage\Provider\UI\EntitySelector
  */
-class ExampleProvider extends BaseProvider
+class AdminProvider extends BaseProvider
 {
-    const ENTITY_ID = 'custom-user';
-    const ENTITY_TYPE = 'project-user';
+    const ENTITY_ID = 'admin';
+    const ENTITY_TYPE = 'user-admin';
     const COUNT_LIMIT = 30;
 
     protected static string|DataManager $dataClass;
+    protected array $selectFields;
 
     public function __construct()
     {
         parent::__construct();
         static::$dataClass = UserTable::class;
+        $this->selectFields = ['ID', 'LOGIN', 'NAME', 'LAST_NAME', 'SECOND_NAME', 'IS_ONLINE', 'PERSONAL_PHOTO'];
     }
 
     /**
@@ -77,8 +80,9 @@ class ExampleProvider extends BaseProvider
     private function getItemsByIds(array $ids = []): array
     {
         $query = static::$dataClass::query()
-            ->setSelect(['*', 'IS_ONLINE'])
-            ->setLimit(self::COUNT_LIMIT);
+            ->setSelect($this->selectFields)
+            ->setLimit(self::COUNT_LIMIT)
+            ->where('GROUPS.GROUP_ID', 1);
         if (!empty($ids))
         {
             $query->whereIn('ID', $ids);
@@ -95,7 +99,7 @@ class ExampleProvider extends BaseProvider
     private function getItemsBySearchString(string $searchString): array
     {
         return static::$dataClass::query()
-            ->setSelect(['*', 'IS_ONLINE'])
+            ->setSelect($this->selectFields)
             ->setFilter([
                 [
                     'LOGIC' => 'OR',
@@ -104,6 +108,7 @@ class ExampleProvider extends BaseProvider
                     ['%SECOND_NAME' => $searchString],
                 ]
             ])
+            ->where('GROUPS.GROUP_ID', 1)
             ->fetchAll();
     }
 
@@ -118,6 +123,7 @@ class ExampleProvider extends BaseProvider
             'entityId' => static::ENTITY_ID,
             'entityType' => static::ENTITY_TYPE,
             'title' => $item['NAME'] . ' ' . $item['LAST_NAME'],
+            'avatar' => $this->makeUserAvatar((int)$item['PERSONAL_PHOTO']),
             'customData' => [
                 'login' => $item['LOGIN'],
                 'onlineStatus' => $item['IS_ONLINE'] ? 'online' : 'offline',
@@ -126,7 +132,7 @@ class ExampleProvider extends BaseProvider
 
         $uiItem->setBadges([
             [
-                'title' => $item['IS_ONLINE'] ? 'inline' : 'offline',
+                'title' => $item['IS_ONLINE'] ? 'online' : 'offline',
                 'textColor' => '#000',
                 'bgColor' => $item['IS_ONLINE'] ? 'lightgreen' : 'lightgrey',
             ],
@@ -179,8 +185,8 @@ class ExampleProvider extends BaseProvider
             $recentItems = $dialog->getRecentItems()->getEntityItems($this->getItemEntityId());
             if (count($recentItems) < static::COUNT_LIMIT) {
                 $moreItemIds = $this->getRecentItemIds($context);
-                foreach ($moreItemIds as $itemId) {
-                    $dialog->addRecentItem($this->makeItem($itemId));
+                foreach ($this->getItemsByIds($moreItemIds) as $item) {
+                    $dialog->addRecentItem($this->makeItem($item));
                 }
             }
         }
@@ -205,7 +211,7 @@ class ExampleProvider extends BaseProvider
         {
             $moreIds = static::$dataClass::query()
                 ->setSelect(['ID'])
-                ->setFilter([])
+                ->where('GROUPS.GROUP_ID', 1)
                 ->setLimit(static::COUNT_LIMIT - count($ids))
                 ->fetchCollection()
                 ->getIdList();
@@ -214,5 +220,21 @@ class ExampleProvider extends BaseProvider
         }
 
         return $ids;
+    }
+
+    public function makeUserAvatar(int $personalPhotoId): ?string
+    {
+        if ($personalPhotoId <= 0)
+        {
+            return null;
+        }
+
+        $avatar = CFile::resizeImageGet(
+            $personalPhotoId,
+            ['width' => 100, 'height' => 100],
+            BX_RESIZE_IMAGE_EXACT,
+        );
+
+        return !empty($avatar['src']) ? $avatar['src'] : null;
     }
 }

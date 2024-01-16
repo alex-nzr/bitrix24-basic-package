@@ -11,7 +11,7 @@
  */
 namespace ANZ\Bitrix24\BasicPackage\Admin\Page\Option;
 
-use ANZ\Bitrix24\BasicPackage\Internal\Option\OptionManager;
+use ANZ\Bitrix24\BasicPackage\Internal\Contract\Option\IOptionStorage;
 
 /**
  * @class MainSettingsPage
@@ -19,9 +19,9 @@ use ANZ\Bitrix24\BasicPackage\Internal\Option\OptionManager;
  */
 class MainSettingsPage extends BaseOptionPage
 {
-    public function __construct(OptionManager $optionManager)
+    public function __construct(IOptionStorage $optionStorage)
     {
-        parent::__construct($optionManager);
-        $this->globalApp->SetTitle('Main settings');
+        parent::__construct($optionStorage);
+        $this->pageTitle = 'Main settings';
     }
 }

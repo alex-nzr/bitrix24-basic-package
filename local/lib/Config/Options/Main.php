@@ -9,28 +9,27 @@
  * 17.12.2023 03:55
  * ==================================================
  */
-
-
 namespace ANZ\Bitrix24\BasicPackage\Config\Options;
 
-use ANZ\Bitrix24\BasicPackage\Internal\Option\OptionManager;
+use ANZ\Bitrix24\BasicPackage\Internal\Contract\Option\IOptionStorage;
+use ANZ\Bitrix24\BasicPackage\Provider\UI\EntitySelector\AdminProvider;
 
 /**
  * @class Main
  * @package ANZ\Bitrix24\BasicPackage\Config\Options
  */
-class Main extends OptionManager
+class Main implements IOptionStorage
 {
-    const OPTION_KEY_SOME_TEXT_OPTION = 'SOME_TEXT_OPTION';
-    const OPTION_KEY_SOME_FILE_OPTION = 'SOME_FILE_OPTION' . parent::OPTION_TYPE_FILE_POSTFIX;
-    const OPTION_KEY_COMPANY_SELECTOR_OPTION = 'COMPANY_SELECTOR_OPTION';
+    const OPTION_KEY_SOME_TEXT_OPTION = 'project_some_text_option';
+    const OPTION_KEY_SOME_FILE_OPTION = 'project_some_option' . self::OPTION_TYPE_FILE_POSTFIX;
+    const OPTION_KEY_ADMIN_SELECTOR_OPTION = 'project_admin_selector_option';
 
     /**
-     * @return void
+     * @return array
      */
-    protected function setTabs(): void
+    public function getTabs(): array
     {
-        $this->tabs = [
+        return [
             [
                 'DIV'   => 'string_settings_tab',
                 'TAB'   => 'String settings',
@@ -71,18 +70,21 @@ class Main extends OptionManager
                 'OPTIONS' => [
                     'UI selector settings',
                     [
-                        static::OPTION_KEY_COMPANY_SELECTOR_OPTION,
+                        static::OPTION_KEY_ADMIN_SELECTOR_OPTION,
                         'Some ui-selector option',
                         json_encode([]),
                         [
                             'ui-selector',             //option type
                             [                          //entity. Multiple entities not supported
-                                'id' => 'company',
+                                'id' => AdminProvider::ENTITY_ID,
                                 'options' => null
                             ],
                             'Y',                       //multiple Y/N
-                            [                          //eventHandlers to tagSelector(JS code)
-                                'onAfterTagAdd' => 'function(event){console.log("IT WORKS!!!")}'
+                            [                          //eventHandlers to tagSelector. In BX namespace required!
+                                'onAfterTagAdd' => [
+                                    'namespace' => 'BX.Anz.Admin.UI.Options',
+                                    'method' => 'testEventHandler'
+                                ]
                             ]
                         ]
                     ],

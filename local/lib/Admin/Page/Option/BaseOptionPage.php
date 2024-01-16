@@ -12,11 +12,7 @@
 namespace ANZ\Bitrix24\BasicPackage\Admin\Page\Option;
 
 use ANZ\Bitrix24\BasicPackage\Admin\Page\BaseAdminPage;
-use ANZ\Bitrix24\BasicPackage\Internal\Option\OptionManager;
-use ANZ\Bitrix24\BasicPackage\Service\Container;
-use Bitrix\Main\AccessDeniedException;
-use Bitrix\Main\Loader;
-use Bitrix\Main\LoaderException;
+use ANZ\Bitrix24\BasicPackage\Internal\Contract\Option\IOptionStorage;
 use Exception;
 use Psr\Container\NotFoundExceptionInterface;
 
@@ -26,36 +22,16 @@ use Psr\Container\NotFoundExceptionInterface;
  */
 abstract class BaseOptionPage extends BaseAdminPage
 {
-    protected OptionManager $optionManager;
+    protected IOptionStorage $optionStorage;
 
     /**
      * BaseOptionPage constructor
-     * @param \ANZ\Bitrix24\BasicPackage\Internal\Option\OptionManager $optionManager
+     * @param \ANZ\Bitrix24\BasicPackage\Internal\Contract\Option\IOptionStorage $optionStorage
      */
-    public function __construct(OptionManager $optionManager)
+    public function __construct(IOptionStorage $optionStorage)
     {
         parent::__construct();
-        $this->optionManager = $optionManager;
-        $this->optionManager->processRequest();
-    }
-
-    /**
-     * @return bool
-     * @throws \Exception|\Psr\Container\NotFoundExceptionInterface
-     */
-    public function checkAccess(): bool
-    {
-        if (!Loader::includeModule($this->optionManager->getModuleId()))
-        {
-            throw new LoaderException('Basic project module not loaded');
-        }
-
-        if (!Container::getInstance()->getUserPermissions()->canViewPage($this))
-        {
-            throw new AccessDeniedException();
-        }
-
-        return true;
+        $this->optionStorage = $optionStorage;
     }
 
     /**
@@ -67,7 +43,10 @@ abstract class BaseOptionPage extends BaseAdminPage
         {
             if ($this->checkAccess())
             {
-                $this->optionManager->drawHtml();
+                $this->globalApp->IncludeComponent('anz:admin.options', '', [
+                    'PAGE_TITLE' => $this->pageTitle,
+                    'TABS' => $this->optionStorage->getTabs()
+                ]);
             }
         }
         catch (Exception | NotFoundExceptionInterface $e)

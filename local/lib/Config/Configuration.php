@@ -12,12 +12,13 @@
 namespace ANZ\Bitrix24\BasicPackage\Config;
 
 use ANZ\Bitrix24\BasicPackage\Internal\Traits\Singleton;
+use ANZ\Bitrix24\BasicPackage\Provider\UI\EntitySelector\AdminProvider;
 
 /**
  * @class Configuration
  * @package ANZ\Bitrix24\BasicPackage\Config
  */
-class Configuration
+final class Configuration
 {
     use Singleton;
 
@@ -58,5 +59,35 @@ class Configuration
     public function getUrlRewriteConditionsHash(): string
     {
         return hash('sha512', json_encode($this->getUrlRewriteConditions()));
+    }
+
+    /**
+     * @return array[]
+     */
+    public function getBasicModuleSettings(): array
+    {
+        return [
+            'controllers'        => [
+                'value'    => [
+                    'defaultNamespace' => '\\ANZ\\Bitrix24\\BasicPackage\\Controller',
+                ],
+                'readonly' => true,
+            ],
+            'ui.entity-selector' => [
+                'value'    => [
+                    'entities'   => [
+                        [
+                            'entityId' => AdminProvider::ENTITY_ID,
+                            'provider' => [
+                                'moduleId'  => $this->getBasicModuleId(),
+                                'className' => AdminProvider::class,
+                            ],
+                        ],
+                    ],
+                    'extensions' => [],
+                ],
+                'readonly' => true,
+            ],
+        ];
     }
 }

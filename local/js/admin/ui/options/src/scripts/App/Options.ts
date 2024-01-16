@@ -14,4 +14,9 @@ export class Options
     {
         return new UiSelector(params);
     }
+
+    public testEventHandler(event)
+    {
+        console.log('IT WORKS!!!');
+    }
 }

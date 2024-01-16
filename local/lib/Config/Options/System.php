@@ -11,13 +11,23 @@
  */
 namespace ANZ\Bitrix24\BasicPackage\Config\Options;
 
+use ANZ\Bitrix24\BasicPackage\Internal\Contract\Option\IOptionStorage;
+
 /**
  * Hidden from public access system options
  * @class System
  * @package ANZ\Bitrix24\BasicPackage\Config\Options
  */
-class System
+class System implements IOptionStorage
 {
     const OPTION_KEY_LAST_UPDATED_CONDITIONS_HASH = 'project_last_updated_conditions_hash';
     const OPTION_KEY_LAST_UPDATED_AGENTS_HASH = 'project_last_updated_agents_hash';
+
+    /**
+     * @return array
+     */
+    public function getTabs(): array
+    {
+        return [];
+    }
 }

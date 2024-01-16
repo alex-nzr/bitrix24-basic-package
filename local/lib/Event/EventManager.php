@@ -30,7 +30,7 @@ class EventManager
                 'OnBuildGlobalMenu' => [
                     [
                         'class'  => Main::class,
-                        'method' => 'addCustomMenuGroup',
+                        'method' => 'onBuildGlobalMenu',
                         'sort'   => 500,
                     ]
                 ],

@@ -1,4 +1,9 @@
-import {UiSelectorSettings, UiSelectorSettingsEntity} from "../../../types/Settings";
+import {
+    UiSelectorEventHandler,
+    UiSelectorEventHandlers,
+    UiSelectorSettings,
+    UiSelectorSettingsEntity
+} from "../../../types/Settings";
 
 export class UiSelector
 {
@@ -19,7 +24,9 @@ export class UiSelector
         this.isMultiple = params.MULTIPLE;
         this.entities = params.ENTITIES;
         this.preselectedItems = params.PRESELECTED_ITEMS;
-        this.eventHandlers = params.EVENT_HANDLERS;
+        this.eventHandlers = Object.keys(params.EVENT_HANDLERS).length > 0
+                                ? this.prepareEventHandlers(params.EVENT_HANDLERS)
+                                : {};
 
         this.init();
     }
@@ -154,5 +161,24 @@ export class UiSelector
             console.error(e);
             return '{}';
         }
+    }
+
+    private prepareEventHandlers(eventHandlers: UiSelectorEventHandlers): object
+    {
+        const result = {};
+        for(let eventType in eventHandlers)
+        {
+            const handler: UiSelectorEventHandler = eventHandlers[eventType];
+            if (handler.namespace.length > 0 && handler.method.length > 0)
+            {
+                const namespace = window.BX.namespace(handler.namespace);
+                if (typeof namespace[handler.method] === 'function')
+                {
+                    result[eventType] = namespace[handler.method];
+                }
+            }
+        }
+
+        return result;
     }
 }

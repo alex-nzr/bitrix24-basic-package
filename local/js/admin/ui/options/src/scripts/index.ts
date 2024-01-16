@@ -12,9 +12,9 @@ if (window.BX)
     window.BX.ready(() => {
         try
         {
-            const AdminApp = window.BX.namespace('Project.Admin.UI');
+            const AdminUI = window.BX.namespace('Anz.Admin.UI');
             const settings = window.BX['Extension'] ? window.BX['Extension'].getSettings() : {};
-            AdminApp.Options = new Options(settings);
+            AdminUI.Options = new Options(settings);
         }
         catch (e)
         {
