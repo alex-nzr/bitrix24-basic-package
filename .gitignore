@@ -1,5 +1,6 @@
 # bitrix
 /bitrix/
+/upload/
 
 # dependencies
 */**/vendor/
@@ -13,4 +14,22 @@
 
 # misc
 /.idea/
+/.osp/
 */**/log/
+
+#files
+.htsecure
+.DS_Store
+.htpasswd
+.well-known
+restore.php
+.htpassword
+*.log
+*.txt
+*.lock
+*.xml
+*.xls
+*.rar
+*.zip
+*.tar
+*.gz
